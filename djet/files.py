@@ -5,6 +5,12 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.utils import six
 
 
+class InMemoryFile(InMemoryUploadedFile):
+
+    def close(self):
+        pass
+
+
 class InMemoryStorage(Storage):
 
     def __init__(self):
@@ -14,7 +20,9 @@ class InMemoryStorage(Storage):
         return self.files[name]
 
     def _save(self, name, content):
-        self.files[name] = content
+        content = content.file.read()
+        file = create_inmemory_file(name, content)
+        self.files[name] = file
         return name
 
     def delete(self, name):
@@ -76,7 +84,7 @@ class InMemoryStorageMixin(object):
 def create_inmemory_file(file_name='tmp.txt', content=b'', content_type=None):
     stream = six.BytesIO()
     stream.write(content)
-    file = InMemoryUploadedFile(stream, None, file_name, content_type, stream.tell(), None)
+    file = InMemoryFile(stream, None, file_name, content_type, stream.tell(), None)
     file.seek(0)
     return file
 
@@ -93,6 +101,6 @@ def create_inmemory_image(file_name='tmp.png', format=None, width=200, height=20
     color = (255, 0, 0, 0)
     image = Image.new('RGBA', size, color)
     image.save(stream, format=format)
-    image_file = InMemoryUploadedFile(stream, None, file_name, content_type, stream.tell(), None)
+    image_file = InMemoryFile(stream, None, file_name, content_type, stream.tell(), None)
     image_file.seek(0)
     return image_file
